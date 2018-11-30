@@ -2,20 +2,15 @@ package edu.ucr.cs.cs226.candr006;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Iterator;
-import java.util.StringTokenizer;
+
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import java.io.IOException;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import scala.Tuple2;
-
-import java.util.Map;
 
 
 /**
@@ -60,35 +55,35 @@ public class KNN
         String out_path="KNN_output_"+formatted+".txt";
 
         //q=args[2] and k=args[3]
-        final String desiredCode = "1.0";
 
         JavaSparkContext spark =
                 new JavaSparkContext("local", "CS226-Demo");
         JavaRDD<String> logFile = spark.textFile("local_copy.csv");
-        JavaRDD<String> okLines = logFile.filter(new Function<String, Boolean>() {
-            public Boolean call(String s) {
-                String[] parts = s.split("\t");
-                String code = parts[5];
-                return code.equals(desiredCode);
+
+
+        JavaPairRDD<Double, String> distanceMap = logFile.mapToPair(new PairFunction<String, Double, String>() {
+
+            public Tuple2<Double, String> call(String line) throws Exception {
+                String[] parts = line.split(",");
+                String[] q=args[2].split(",");
+                Double x1= Double.parseDouble(q[0]);
+                Double y1= Double.parseDouble(q[1]);
+
+
+                Double x2= Double.valueOf(parts[1]);
+                Double y2= Double.valueOf(parts[2]);
+
+                double dist=Math.sqrt(Math.pow((x2-x1),2)+Math.pow((y2-y1),2));
+
+                String xy_string= parts[1]+","+parts[2];
+
+
+                return new Tuple2<Double,String>(dist, xy_string);
             }
         });
 
-        JavaRDD<Long> bytes = okLines.map(new Function<String, Long>() {
-            public Long call(String s) throws Exception {
-                return Long.parseLong(s.split("\t")[6]);
-            }
-        });
 
-        JavaPairRDD<String, Long> codeSize = logFile.mapToPair(new PairFunction<String, String, Long>() {
-
-            public Tuple2<String, Long> call(String line) throws Exception {
-                String[] parts = line.split("\t");
-                String code = parts[5];
-                Long size = Long.parseLong(parts[6]);
-                return new Tuple2<String, Long>(code, size);
-            }
-        });
-        JavaPairRDD<String, Long> sumBytesByCode = codeSize.reduceByKey(new Function2<Long, Long, Long>() {
+        /*JavaPairRDD<String, Long> sumBytesByCode = codeSize.reduceByKey(new Function2<Long, Long, Long>() {
             public Long call(Long s1, Long s2) throws Exception {
                 return s1 + s2;
             }
@@ -105,6 +100,6 @@ public class KNN
 
         long numOfLines = okLines.count();
         System.out.printf("%d lines with OK in the file\n", numOfLines);
-        System.out.println( "Hello World!" );
+        System.out.println( "Hello World!" );*/
     }
 }

@@ -6,11 +6,11 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="HousingPriceFeatureCorrelation" />
+        <module name="KNN" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="HousingPriceFeatureCorrelation" target="8" />
+      <module name="KNN" target="8" />
     </bytecodeTargetLevel>
   </component>
 </project>
