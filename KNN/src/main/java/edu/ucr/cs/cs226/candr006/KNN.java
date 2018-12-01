@@ -19,14 +19,7 @@ package edu.ucr.cs.cs226.candr006;
  * KNN
  *
  */
-class TupleComparator implements Comparator<Tuple2<Integer, Integer>>, Serializable {
-    @Override
-    public int compare(Tuple2<Integer, Integer> o1, Tuple2<Integer, Integer> o2) {
-        if (o1._1() == o2._1())
-            return o1._2() - o2._2();
-        return o1._1() - o2._1();
-    }
-}
+
 public class KNN
 {
 
@@ -93,7 +86,7 @@ public class KNN
         });
 
         //now sort by distance
-        JavaPairRDD<Double, String> sortedDistance = distanceMap.sortByKey();
+        JavaPairRDD<Double, String> sortedDistance = distanceMap.sortByKey(true);
 
         //remove duplicates
         JavaPairRDD<Double, String> distinctNeighbors = sortedDistance.distinct();
@@ -101,7 +94,7 @@ public class KNN
         //print k neighbors
         Integer k= Integer.valueOf(args[2]);
 
-        for(Tuple2<Double, String> line:distinctNeighbors.collect()){
+        for(Tuple2<Double, String> line:distinctNeighbors.sortByKey().collect()){
             if(k>0) {
                 System.out.println("* " + line);
                 k--;
@@ -110,19 +103,5 @@ public class KNN
             }
         }
 
-        /*
-        Map<String, Long> sumBytesByCodeMap = sumBytesByCode.collectAsMap();
-        System.out.println(sumBytesByCodeMap);
-        Long sumBytes = bytes.reduce(new Function2<Long, Long, Long>() {
-            public Long call(Long s1, Long s2) throws Exception {
-                return s1 + s2;
-            }
-        });
-
-        System.out.printf("Sum Bytes is %d\n", sumBytes);
-
-        long numOfLines = okLines.count();
-        System.out.printf("%d lines with OK in the file\n", numOfLines);
-        System.out.println( "Hello World!" );*/
     }
 }
