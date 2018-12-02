@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="aa0d0ef8-9072-4dfc-9a0e-cf517e47108f" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/edu/ucr/cs/cs226/candr006/KNN.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/edu/ucr/cs/cs226/candr006/KNN.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/target/" />
@@ -34,12 +33,12 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="java" value="556" />
+          <entry key="java" value="798" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JAVA" value="556" />
+          <entry key="JAVA" value="798" />
         </counts>
       </usages-collector>
     </session>
@@ -49,8 +48,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/edu/ucr/cs/cs226/candr006/KNN.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="361">
-              <caret line="58" lean-forward="true" selection-start-line="58" selection-end-line="58" />
+            <state relative-caret-position="114">
+              <caret line="87" column="83" lean-forward="true" selection-start-line="87" selection-start-column="83" selection-end-line="87" selection-end-column="83" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -132,7 +131,7 @@
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1543722914286" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1543725647346" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/pom.xml" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
@@ -160,12 +159,12 @@
       <option name="presentableId" value="Default" />
       <updated>1543642860487</updated>
       <workItem from="1543642865713" duration="2471000" />
-      <workItem from="1543714831666" duration="6648000" />
+      <workItem from="1543714831666" duration="8813000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="9119000" />
+    <option name="totallyTimeSpent" value="11284000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-1" y="27" width="1368" height="637" extended-state="6" />
@@ -211,8 +210,8 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/src/main/java/edu/ucr/cs/cs226/candr006/KNN.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="361">
-          <caret line="58" lean-forward="true" selection-start-line="58" selection-end-line="58" />
+        <state relative-caret-position="114">
+          <caret line="87" column="83" lean-forward="true" selection-start-line="87" selection-start-column="83" selection-end-line="87" selection-end-column="83" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>

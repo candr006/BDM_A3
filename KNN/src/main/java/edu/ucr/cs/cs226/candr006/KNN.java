@@ -33,7 +33,7 @@ class SparkRDDKNN
         file_name=file_name1;
     }
 
-    void run(){
+    void getKNN(){
 
         JavaSparkContext spark =
                 new JavaSparkContext("local", "SparkRDD-KNN");
@@ -83,6 +83,26 @@ class SparkRDDKNN
 
 public class KNN
 {
+    public static void decompressFile(File localFile) throws IOException {
+        //first decompress bzip file
+        System.out.println("\nDecompressing File. Please wait a few moments...\n");
+        FileInputStream is4 = new FileInputStream(localFile);
+        BZip2CompressorInputStream inputStream4 = new BZip2CompressorInputStream(is4, true);
+        OutputStream ostream4 = new FileOutputStream("local_copy.csv");
+        final byte[] buffer4 = new byte[8192];
+        int n4 = 0;
+        while ((n4 = inputStream4.read(buffer4))>0) {
+            ostream4.write(buffer4, 0, n4);
+        }
+        ostream4.close();
+        inputStream4.close();
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMddyyyyHHmmss");
+        LocalDateTime now = LocalDateTime.now();
+        String formatted = dtf.format(now);
+        String out_path="KNN_output_"+formatted+".txt";
+        return;
+    }
 
     public static void main( String[] args ) throws IOException, ClassNotFoundException, InterruptedException {
         //check that all arguments are there
@@ -101,35 +121,26 @@ public class KNN
             return;
         }
 
-        //first decompress bzip file
-        FileInputStream is4 = new FileInputStream(localFile);
-        BZip2CompressorInputStream inputStream4 = new BZip2CompressorInputStream(is4, true);
-        OutputStream ostream4 = new FileOutputStream("local_copy.csv");
-        final byte[] buffer4 = new byte[8192];
-        int n4 = 0;
-        while ((n4 = inputStream4.read(buffer4))>0) {
-            ostream4.write(buffer4, 0, n4);
-        }
-        ostream4.close();
-        inputStream4.close();
-
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMddyyyyHHmmss");
-        LocalDateTime now = LocalDateTime.now();
-        String formatted = dtf.format(now);
-        String out_path="KNN_output_"+formatted+".txt";
 
         //q=args[1] and k=args[2]
         SparkRDDKNN alg1 = new SparkRDDKNN(Integer.valueOf(args[2]), args[1], "local_copy.csv");
 
         Scanner reader = new Scanner(System.in);  // Reading from System.in
         int n=-1;
+        Boolean first_run=true;
         System.out.println("\nSelect one:\n1. Spark RDD KNN \n2. Spark SQL KNN \n3. Exit \n \n");
 
         while (n!=3) {
             n = reader.nextInt();
             if(n==1){
-                alg1.run();
+                if(first_run){
+                    decompressFile(localFile);
+                }
+                alg1.getKNN();
             }else if(n==2){
+                if(first_run){
+                    decompressFile(localFile);
+                }
                 //call alg2
             }else if(n==3){
                 return;
