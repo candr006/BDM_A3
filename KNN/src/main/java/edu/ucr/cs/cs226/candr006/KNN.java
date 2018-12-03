@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -114,7 +115,7 @@ public class KNN
 
         for(Tuple2<Double, String> line:distinctNeighbors.sortByKey().collect()){
             if(k>0) {
-                printWriter.println("* " + line);
+                printWriter.println(line+"\n");
                 k--;
             }else{
                 break;
@@ -140,16 +141,17 @@ public class KNN
 
         Dataset<Row> input_csv = session_sql.read().option("header", "false").csv("local_copy.csv");
         input_csv=input_csv.select(
-                input_csv.col("c_0"),
-                input_csv.col("c_1"), //x
-                input_csv.col("c_2")); //y
-        List<Row> mapped = null;
-        
+                input_csv.col("_c0"),
+                input_csv.col("_c1"), //x
+                input_csv.col("_c2")); //y
+        List<Row> mapped = new ArrayList<Row>();
+
+       // System.out.println("\n\n------------entering for each loop-----------------\n\n");
 
         input_csv.foreach((ForeachFunction<Row>) row ->{
 
-            double x2=Double.valueOf(row.getAs("c_1").toString()); //x
-            double y2=Double.valueOf(row.getAs("c_2").toString()); //y
+            double x2=Double.valueOf(row.getAs("_c1").toString()); //x
+            double y2=Double.valueOf(row.getAs("_c2").toString()); //y
             double dist=Math.sqrt(Math.pow((x2-x1),2)+Math.pow((y2-y1),2));
 
             String xy_string= String.valueOf(x2)+","+String.valueOf(y2);
@@ -159,15 +161,21 @@ public class KNN
             mapped.add(r1);
         });
 
+        System.out.println("\n\n------------finished looping through list-----------------\n\n");
+
         StructType schema = new StructType(new StructField[] {
                 new StructField("distance", DataTypes.DoubleType, false, null),
                 new StructField("x_y_string", DataTypes.StringType, false, null),
         });
+        System.out.println("\n\n------------create schema----------------\n\n");
+
 
         Dataset<Row> mapped_df =session_sql.createDataFrame(mapped,schema);
-        Dataset<Row> distinct_neighbors = mapped_df.select(mapped_df.col("x_y_string"),mapped_df.col("distance")).distinct();
+        System.out.println("\n\n------------create dataframe----------------\n\n");
+        Dataset<Row> distinct_neighbors = mapped_df.distinct();
+        System.out.println("\n\n------------create distinct neighbors----------------\n\n");
+        distinct_neighbors.sort("distance").show(Integer.valueOf(args[2]));
 
-        distinct_neighbors.show();
 
 
                 //.collect();
