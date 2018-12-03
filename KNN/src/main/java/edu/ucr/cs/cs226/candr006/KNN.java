@@ -6,16 +6,23 @@ import java.time.format.DateTimeFormatter;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.ForeachFunction;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.*;
+import org.apache.spark.sql.functions.*;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import scala.Tuple2;
+
+import static org.apache.spark.sql.types.DataTypes.IntegerType;
 
 
 /**
@@ -121,10 +128,62 @@ public class KNN
          */
         SparkSession session_sql = SparkSession
                 .builder()
-                .appName("Housing Price Feature Correlation")
+                .appName("SparkSQL")
                 .getOrCreate();
 
-        Dataset<Row> input_csv =session_sql.sql("SELECT * FROM csv.`local_copy.csv`");
+
+        String[] q=args[1].split(",");
+        Double x1= Double.parseDouble(q[0]);
+        Double y1= Double.parseDouble(q[1]);
+
+
+
+        Dataset<Row> input_csv = session_sql.read().option("header", "false").csv("local_copy.csv");
+        input_csv=input_csv.select(
+                input_csv.col("c_0"),
+                input_csv.col("c_1"), //x
+                input_csv.col("c_2")); //y
+        List<Row> mapped = null;
+        
+
+        input_csv.foreach((ForeachFunction<Row>) row ->{
+
+            double x2=Double.valueOf(row.getAs("c_1").toString()); //x
+            double y2=Double.valueOf(row.getAs("c_2").toString()); //y
+            double dist=Math.sqrt(Math.pow((x2-x1),2)+Math.pow((y2-y1),2));
+
+            String xy_string= String.valueOf(x2)+","+String.valueOf(y2);
+            Row r1=RowFactory.create(dist,xy_string);
+
+            //Add to List of Row
+            mapped.add(r1);
+        });
+
+        StructType schema = new StructType(new StructField[] {
+                new StructField("distance", DataTypes.DoubleType, false, null),
+                new StructField("x_y_string", DataTypes.StringType, false, null),
+        });
+
+        Dataset<Row> mapped_df =session_sql.createDataFrame(mapped,schema);
+        Dataset<Row> distinct_neighbors = mapped_df.select(mapped_df.col("x_y_string"),mapped_df.col("distance")).distinct();
+
+        distinct_neighbors.show();
+
+
+                //.collect();
+        //session_sql.sql("SELECT id,x,y FROM csv.`local_copy.csv`");
+       /* input_csv=input_csv.select(
+                input_csv.col("id"),
+                input_csv.col("x"),
+                input_csv.col("y"));
+
+        // double dist=Math.sqrt(Math.pow((x2-x1),2)+Math.pow((y2-y1),2));
+        input_csv= input_csv.select(
+                input_csv.col("x").pow(2)
+            );
+
+       // Dataset<Row> mapped= new Dataset();
+        //input_csv.foreach((ForeachFunction<Row>) row ->{ double x1=double.valueof(row[1]); });*/
 
 
         System.out.println("\n\nDone. Please check output files\n");
