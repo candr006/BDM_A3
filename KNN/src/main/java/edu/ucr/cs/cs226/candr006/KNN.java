@@ -23,6 +23,7 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.Tuple2;
 
+import static org.apache.spark.api.java.JavaRDDLike$class.collect;
 import static org.apache.spark.sql.types.DataTypes.IntegerType;
 
 
@@ -172,9 +173,17 @@ public class KNN
 
         Dataset<Row> mapped_df =session_sql.createDataFrame(mapped,schema);
         System.out.println("\n\n------------create dataframe----------------\n\n");
-        Dataset<Row> distinct_neighbors = mapped_df.distinct();
+       // Dataset<Row> distinct_neighbors = mapped_df.distinct().sort("distance");
         System.out.println("\n\n------------create distinct neighbors----------------\n\n");
-        distinct_neighbors.sort("distance").show(Integer.valueOf(args[2]));
+        //distinct_neighbors.show(Integer.valueOf(args[2]));
+        mapped_df.createOrReplaceTempView("nn");
+        System.out.println("\n\n------------temp table----------------\n\n");
+        Dataset<Row> reducedCSVDataset = session_sql.sql("select distinct distance,x_y_string from nn order by distance limit "+args[2]);
+        System.out.println("\n\n------------sel from temp----------------\n\n");
+        Dataset<String> knn = reducedCSVDataset.toDF().select("distance","x_y_string").as(Encoders.STRING());
+        System.out.println("\n\n------------encode as string----------------\n\n");
+        List<String> knn_list = knn.collectAsList();
+        knn_list.forEach(x -> System.out.println(x));
 
 
 
