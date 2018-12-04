@@ -16,9 +16,11 @@ import org.apache.spark.api.java.function.ForeachFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.*;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.functions.*;
 import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.Tuple2;
@@ -165,18 +167,21 @@ public class KNN
         System.out.println("\n\n------------finished looping through list-----------------\n\n");
 
         StructType schema = new StructType(new StructField[] {
-                new StructField("distance", DataTypes.DoubleType, false, null),
-                new StructField("x_y_string", DataTypes.StringType, false, null),
+                new StructField("distance", DataTypes.DoubleType,true, Metadata.empty()),
+                new StructField("x_y_string", DataTypes.StringType, true,Metadata.empty()),
         });
         System.out.println("\n\n------------create schema----------------\n\n");
 
 
         Dataset<Row> mapped_df =session_sql.createDataFrame(mapped,schema);
+        mapped_df.foreach((ForeachFunction<Row>) row ->{
+            System.out.println(row.get(0));
+        });
         System.out.println("\n\n------------create dataframe----------------\n\n");
        // Dataset<Row> distinct_neighbors = mapped_df.distinct().sort("distance");
         System.out.println("\n\n------------create distinct neighbors----------------\n\n");
         //distinct_neighbors.show(Integer.valueOf(args[2]));
-        mapped_df.createOrReplaceTempView("nn");
+        mapped_df.registerTempTable("nn");
         System.out.println("\n\n------------temp table----------------\n\n");
         Dataset<Row> reducedCSVDataset = session_sql.sql("select distinct distance,x_y_string from nn order by distance limit "+args[2]);
         System.out.println("\n\n------------sel from temp----------------\n\n");
