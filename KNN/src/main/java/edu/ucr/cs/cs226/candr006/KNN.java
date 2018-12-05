@@ -55,7 +55,7 @@ public class KNN
         }
 
         //first decompress bzip file
-        FileInputStream is4 = new FileInputStream(localFile);
+        /*FileInputStream is4 = new FileInputStream(localFile);
         BZip2CompressorInputStream inputStream4 = new BZip2CompressorInputStream(is4, true);
         OutputStream ostream4 = new FileOutputStream("local_copy.csv");
         final byte[] buffer4 = new byte[8192];
@@ -64,7 +64,7 @@ public class KNN
             ostream4.write(buffer4, 0, n4);
         }
         ostream4.close();
-        inputStream4.close();
+        inputStream4.close();*/
 
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMddyyyyHHmmss");
         LocalDateTime now = LocalDateTime.now();
@@ -174,9 +174,6 @@ public class KNN
 
 
         Dataset<Row> mapped_df =session_sql.createDataFrame(mapped,schema);
-        mapped_df.foreach((ForeachFunction<Row>) row ->{
-            System.out.println(row.get(0));
-        });
         System.out.println("\n\n------------create dataframe----------------\n\n");
        // Dataset<Row> distinct_neighbors = mapped_df.distinct().sort("distance");
         System.out.println("\n\n------------create distinct neighbors----------------\n\n");
@@ -185,10 +182,19 @@ public class KNN
         System.out.println("\n\n------------temp table----------------\n\n");
         Dataset<Row> reducedCSVDataset = session_sql.sql("select distinct distance,x_y_string from nn order by distance limit "+args[2]);
         System.out.println("\n\n------------sel from temp----------------\n\n");
-        Dataset<String> knn = reducedCSVDataset.toDF().select("distance","x_y_string").as(Encoders.STRING());
+        //Dataset<String> knn = reducedCSVDataset.toDF().select("distance","x_y_string").as(Encoders.STRING());
         System.out.println("\n\n------------encode as string----------------\n\n");
-        List<String> knn_list = knn.collectAsList();
-        knn_list.forEach(x -> System.out.println(x));
+        FileWriter fileWriter2 = new FileWriter(out_path_sql);
+        PrintWriter printWriter2 = new PrintWriter(fileWriter);
+        reducedCSVDataset.foreach((ForeachFunction<Row>) row ->{
+                    String s1=row.getAs("distance").toString();
+                    String s2=row.getAs("x_y_string").toString();
+
+                    printWriter2.println(s1+','+s2+'\n');
+                });
+        printWriter2.close();
+        //List<String> knn_list = knn.collectAsList();
+        //knn_list.forEach(x -> System.out.println(x));
 
 
 
