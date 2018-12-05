@@ -3,30 +3,26 @@ import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.ForeachFunction;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.*;
 import org.apache.spark.sql.*;
-import org.apache.spark.sql.functions.*;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.Tuple2;
+import scala.collection.JavaConverters;
+import scala.collection.Seq;
 
-import static org.apache.spark.api.java.JavaRDDLike$class.collect;
-import static org.apache.spark.sql.types.DataTypes.IntegerType;
+import static java.lang.System.out;
 
 
 /**
@@ -40,9 +36,9 @@ public class KNN
     public static void main( String[] args ) throws IOException, ClassNotFoundException, InterruptedException {
         //check that all arguments are there
         if(args.length<3){
-            System.out.println("\n\nERROR: You are missing one or more arguments.");
-            System.out.println("<local file path> <point q> <k>");
-            System.out.println("Exiting");
+            out.println("\n\nERROR: You are missing one or more arguments.");
+            out.println("<local file path> <point q> <k>");
+            out.println("Exiting");
             return;
         }
         String str_local_file=args[0];
@@ -50,7 +46,7 @@ public class KNN
         //check if the local file exists
         File localFile= new File(str_local_file);
         if(!localFile.exists()){
-            System.out.println("\n\nERROR: The local file you entered does not exist. Exiting.\n");
+            out.println("\n\nERROR: The local file you entered does not exist. Exiting.\n");
             return;
         }
 
@@ -113,7 +109,7 @@ public class KNN
         Integer k= Integer.valueOf(args[2]);
         FileWriter fileWriter = new FileWriter(out_path_rdd);
         PrintWriter printWriter = new PrintWriter(fileWriter);
-        System.out.println("-------------------Spark RDD KNN -----------------------");
+        out.println("-------------------Spark RDD KNN -----------------------");
 
 
         for(Tuple2<Double, String> line:distinctNeighbors.sortByKey().collect()){
@@ -164,58 +160,35 @@ public class KNN
             mapped.add(r1);
         });
 
-        System.out.println("\n\n------------finished looping through list-----------------\n\n");
+        out.println("\n\n------------finished looping through list-----------------\n\n");
 
         StructType schema = new StructType(new StructField[] {
                 new StructField("distance", DataTypes.DoubleType,true, Metadata.empty()),
                 new StructField("x_y_string", DataTypes.StringType, true,Metadata.empty()),
         });
-        System.out.println("\n\n------------create schema----------------\n\n");
+        out.println("\n\n------------create schema----------------\n\n");
 
 
         Dataset<Row> mapped_df =session_sql.createDataFrame(mapped,schema);
-        System.out.println("\n\n------------create dataframe----------------\n\n");
-       // Dataset<Row> distinct_neighbors = mapped_df.distinct().sort("distance");
-        System.out.println("\n\n------------create distinct neighbors----------------\n\n");
-        //distinct_neighbors.show(Integer.valueOf(args[2]));
+        out.println("\n\n------------create dataframe----------------\n\n");
+        out.println("\n\n------------create distinct neighbors----------------\n\n");
         mapped_df.registerTempTable("nn");
-        System.out.println("\n\n------------temp table----------------\n\n");
-        Dataset<Row> reducedCSVDataset = session_sql.sql("select distinct distance,x_y_string from nn order by distance limit "+args[2]);
-        System.out.println("\n\n------------sel from temp----------------\n\n");
-        //Dataset<String> knn = reducedCSVDataset.toDF().select("distance","x_y_string").as(Encoders.STRING());
-        System.out.println("\n\n------------encode as string----------------\n\n");
-        FileWriter fileWriter2 = new FileWriter(out_path_sql);
-        PrintWriter printWriter2 = new PrintWriter(fileWriter);
-        reducedCSVDataset.foreach((ForeachFunction<Row>) row ->{
-                    String s1=row.getAs("distance").toString();
-                    String s2=row.getAs("x_y_string").toString();
-
-                    printWriter2.println(s1+','+s2+'\n');
-                });
-        printWriter2.close();
-        //List<String> knn_list = knn.collectAsList();
-        //knn_list.forEach(x -> System.out.println(x));
+        out.println("\n\n------------temp table----------------\n\n");
+        Dataset<Row> reducedCSVDataset = session_sql.sql("select distinct concat(distance,',',x_y_string) as out from nn order by out limit "+args[2]);
+        out.println("\n\n------------sel from temp----------------\n\n");
+        Dataset<String> knn = reducedCSVDataset.toDF().select("out").as(Encoders.STRING());
+        out.println("\n\n------------encode as string----------------\n\n");
+        List<String> knn_list = knn.collectAsList();
+        knn.rdd().saveAsTextFile(out_path_sql);
 
 
-
-                //.collect();
-        //session_sql.sql("SELECT id,x,y FROM csv.`local_copy.csv`");
-       /* input_csv=input_csv.select(
-                input_csv.col("id"),
-                input_csv.col("x"),
-                input_csv.col("y"));
-
-        // double dist=Math.sqrt(Math.pow((x2-x1),2)+Math.pow((y2-y1),2));
-        input_csv= input_csv.select(
-                input_csv.col("x").pow(2)
-            );
-
-       // Dataset<Row> mapped= new Dataset();
-        //input_csv.foreach((ForeachFunction<Row>) row ->{ double x1=double.valueof(row[1]); });*/
-
-
-        System.out.println("\n\nDone. Please check output files\n");
+        out.println("\n\nDone. Please check output files\n");
 
     }
+
+        public static Seq<String> convertListToSeq(List<String> inputList) {
+            return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
+
+        }
 }
 
