@@ -53,7 +53,7 @@ public class KNN
             return;
         }
 
-        //first decompress bzip file
+        //first decompress bzip file- Input file assumed to be a .bz2 type
         FileInputStream is4 = new FileInputStream(localFile);
         BZip2CompressorInputStream inputStream4 = new BZip2CompressorInputStream(is4, true);
         OutputStream ostream4 = new FileOutputStream("local_copy.csv");
@@ -65,18 +65,21 @@ public class KNN
         ostream4.close();
         inputStream4.close();
 
+        //This is used to give the output files a unique name
+        //The RDD and SQL Implementations each output to their own file
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMddyyyyHHmmss");
         LocalDateTime now = LocalDateTime.now();
         String formatted = dtf.format(now);
         String out_path_rdd="SparkRDD_KNN_output_"+formatted+".txt";
         String out_path_sql="SparkSQL_KNN_output_"+formatted+".txt";
 
-        //q=args[1] and k=args[2]
+
+
         /**********************SparkRDD Implementation**********************
          *
          */
 
-   /*     JavaSparkContext spark =
+        JavaSparkContext spark =
                 new JavaSparkContext("local", "CS226-Demo");
         JavaRDD<String> logFile = spark.textFile("local_copy.csv");
 
@@ -108,12 +111,10 @@ public class KNN
         //remove duplicates
         JavaPairRDD<Double, String> distinctNeighbors = sortedDistance.distinct();
 
-        //print k neighbors
+        //print k neighbors to a file
         Integer k= Integer.valueOf(args[2]);
         FileWriter fileWriter = new FileWriter(out_path_rdd);
         PrintWriter printWriter = new PrintWriter(fileWriter);
-        out.println("-------------------Spark RDD KNN -----------------------");
-
 
         for(Tuple2<Double, String> line:distinctNeighbors.sortByKey().collect()){
             if(k>0) {
@@ -123,7 +124,7 @@ public class KNN
                 break;
             }
         }
-        printWriter.close();*/
+        printWriter.close();
 
 
         /**********************SparkSQL Implementation**********************
@@ -140,37 +141,22 @@ public class KNN
         Double y1= Double.parseDouble(q[1]);
 
 
-
+        //Read the file in
         Dataset<Row> input_csv = session_sql.read().option("header", "false").csv("local_copy.csv");
         input_csv=input_csv.select(
                 input_csv.col("_c0"),
                 input_csv.col("_c1"), //x
                 input_csv.col("_c2")); //y
-        List<Row> mapped = new ArrayList<Row>();
 
-       // System.out.println("\n\n------------entering for each loop-----------------\n\n");
-
-
-      /*  input_csv.foreach((ForeachFunction<Row>) row ->{
-
-            double x2=Double.valueOf(row.getAs("_c1").toString()); //x
-            double y2=Double.valueOf(row.getAs("_c2").toString()); //y
-            double dist=Math.sqrt(Math.pow((x2-x1),2)+Math.pow((y2-y1),2));
-
-            String xy_string= String.valueOf(x2)+","+String.valueOf(y2);
-            Row r1=RowFactory.create(dist,xy_string);
-
-            //Add to List of Row
-            mapped.add(r1);
-        });*/
         Encoder<String> stringEncoder = Encoders.STRING();
+
+        //Convert to Java RDD and perform map function to get distance of each point
         JavaRDD<Row> mapped_rdd = input_csv.javaRDD().map(
 
                 new Function<Row, Row>() {
 
                     @Override
                     public Row call(Row line) throws Exception {
-                        //String[] parts = line.split(",");
                         String[] q1 = args[1].split(",");
                         Double x11 = Double.parseDouble(q1[0]);
                         Double y11 = Double.parseDouble(q1[1]);
@@ -182,42 +168,39 @@ public class KNN
 
                         String xy_string = line.get(1).toString() + "," + line.get(2).toString();
 
-                        //String t1 = String.valueOf(dist) + ',' + (xy_string);
                         Row r1=RowFactory.create(dist,xy_string);
                         return r1;
                     }
                 });
 
 
-        out.println("\n\n------------finished looping through list-----------------\n\n");
-
+    //schema details the data types
         StructType schema = new StructType(new StructField[] {
                 new StructField("distance", DataTypes.DoubleType,true, Metadata.empty()),
                 new StructField("x_y_string", DataTypes.StringType, true,Metadata.empty()),
         });
-        out.println("\n\n------------create schema----------------\n\n");
 
 
+        //create a data frame from the mapped rdd
         Dataset<Row> mapped_df =session_sql.createDataFrame(mapped_rdd,schema);
-        out.println("\n\n------------create dataframe----------------\n\n");
-        out.println("\n\n------------create distinct neighbors----------------\n\n");
+
+        //create nearest neighbors table
         mapped_df.registerTempTable("nn");
-        out.println("\n\n------------temp table----------------\n\n");
+
+        //use sql to get the distinct neigbors, sort by distance, and also limit to k lines
         Dataset<Row> reducedCSVDataset = session_sql.sql("select distinct concat(distance,',',x_y_string) as out from nn order by out limit "+args[2]);
-        out.println("\n\n------------sel from temp----------------\n\n");
+
         Dataset<String> knn = reducedCSVDataset.toDF().select("out").as(Encoders.STRING());
-        out.println("\n\n------------encode as string----------------\n\n");
+        //collect the knn as a list
         List<String> knn_list = knn.collectAsList();
+
+        //output knn to a file
         knn.rdd().saveAsTextFile(out_path_sql);
 
 
-        out.println("\n\nDone. Please check output files\n");
+        out.println("\n\nDone. Please check the 2 outputs (Spark RDD file and Spark SQL directory)\n");
 
     }
 
-        public static Seq<String> convertListToSeq(List<String> inputList) {
-            return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
-
-        }
 }
 
