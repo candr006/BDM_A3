@@ -8,10 +8,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.ForeachFunction;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.types.DataTypes;
@@ -51,7 +54,7 @@ public class KNN
         }
 
         //first decompress bzip file
-        /*FileInputStream is4 = new FileInputStream(localFile);
+        FileInputStream is4 = new FileInputStream(localFile);
         BZip2CompressorInputStream inputStream4 = new BZip2CompressorInputStream(is4, true);
         OutputStream ostream4 = new FileOutputStream("local_copy.csv");
         final byte[] buffer4 = new byte[8192];
@@ -60,7 +63,7 @@ public class KNN
             ostream4.write(buffer4, 0, n4);
         }
         ostream4.close();
-        inputStream4.close();*/
+        inputStream4.close();
 
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMddyyyyHHmmss");
         LocalDateTime now = LocalDateTime.now();
@@ -147,7 +150,8 @@ public class KNN
 
        // System.out.println("\n\n------------entering for each loop-----------------\n\n");
 
-        input_csv.foreach((ForeachFunction<Row>) row ->{
+
+      /*  input_csv.foreach((ForeachFunction<Row>) row ->{
 
             double x2=Double.valueOf(row.getAs("_c1").toString()); //x
             double y2=Double.valueOf(row.getAs("_c2").toString()); //y
@@ -158,7 +162,30 @@ public class KNN
 
             //Add to List of Row
             mapped.add(r1);
-        });
+        });*/
+        Encoder<String> stringEncoder = Encoders.STRING();
+        List<String> mapped_rdd = input_csv.javaRDD().map(
+
+                new Function<Row, String>() {
+
+                    @Override
+                    public String call(Row line) throws Exception {
+                        //String[] parts = line.split(",");
+                        String[] q1 = args[1].split(",");
+                        Double x11 = Double.parseDouble(q1[0]);
+                        Double y11 = Double.parseDouble(q1[1]);
+
+                        Double x2 = Double.parseDouble(line.get(1).toString());
+                        Double y2 = Double.parseDouble(line.get(2).toString());
+
+                        double dist = Math.sqrt(Math.pow((x2 - x11), 2) + Math.pow((y2 - y11), 2));
+
+                        String xy_string = line.get(1).toString() + "," + line.get(2).toString();
+
+                        String t1 = String.valueOf(dist) + ',' + (xy_string);
+                        return t1;
+                    }
+                }).collect();
 
         out.println("\n\n------------finished looping through list-----------------\n\n");
 
