@@ -76,7 +76,7 @@ public class KNN
          *
          */
 
-        JavaSparkContext spark =
+   /*     JavaSparkContext spark =
                 new JavaSparkContext("local", "CS226-Demo");
         JavaRDD<String> logFile = spark.textFile("local_copy.csv");
 
@@ -123,7 +123,7 @@ public class KNN
                 break;
             }
         }
-        printWriter.close();
+        printWriter.close();*/
 
 
         /**********************SparkSQL Implementation**********************
@@ -164,12 +164,12 @@ public class KNN
             mapped.add(r1);
         });*/
         Encoder<String> stringEncoder = Encoders.STRING();
-        List<String> mapped_rdd = input_csv.javaRDD().map(
+        JavaRDD<Row> mapped_rdd = input_csv.javaRDD().map(
 
-                new Function<Row, String>() {
+                new Function<Row, Row>() {
 
                     @Override
-                    public String call(Row line) throws Exception {
+                    public Row call(Row line) throws Exception {
                         //String[] parts = line.split(",");
                         String[] q1 = args[1].split(",");
                         Double x11 = Double.parseDouble(q1[0]);
@@ -182,10 +182,12 @@ public class KNN
 
                         String xy_string = line.get(1).toString() + "," + line.get(2).toString();
 
-                        String t1 = String.valueOf(dist) + ',' + (xy_string);
-                        return t1;
+                        //String t1 = String.valueOf(dist) + ',' + (xy_string);
+                        Row r1=RowFactory.create(dist,xy_string);
+                        return r1;
                     }
-                }).collect();
+                });
+
 
         out.println("\n\n------------finished looping through list-----------------\n\n");
 
@@ -196,7 +198,7 @@ public class KNN
         out.println("\n\n------------create schema----------------\n\n");
 
 
-        Dataset<Row> mapped_df =session_sql.createDataFrame(mapped,schema);
+        Dataset<Row> mapped_df =session_sql.createDataFrame(mapped_rdd,schema);
         out.println("\n\n------------create dataframe----------------\n\n");
         out.println("\n\n------------create distinct neighbors----------------\n\n");
         mapped_df.registerTempTable("nn");
